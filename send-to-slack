@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import requests
+import argparse
+import json
+
+token = "xxxxxxxxxxxxxxxxxxxxxxxxxx"
+headers = {'Authorization': "Bearer " + token, }
+
+def send_message(args):
+    print "[+] Sending message '%s' to channel '%s' as user '%s'" %(args.m, args.c, args.u)
+    url = "https://slack.com/api/chat.postMessage"
+    data = {'text' : args.m, 'channel' : args.c, 'username' : args.u, 'as_usr' : False}
+    try:
+        r = requests.post(headers=headers, url=url,data=data)
+        resp = json.loads(r.text)
+        if (resp['ok']):
+            print "[+] Message succesfully sent."
+        else :
+            print "[-] Error sending. ", resp
+    except Exception as e:
+        print "[-] Something wrong "
+        print "[-] Exception message : ", e
+
+
+def send_file(args):
+
+    print "We will upload " + args.f
+    
+    initial_comment = args.m
+    channels = args.c
+    url = "https://slack.com/api/files.upload"
+    upload_file = {'file' : open(args.f, 'rb')}
+    headers = {'Authorization': "Bearer " + token, }
+    data = {'initial_comment' : initial_comment, 'channels' : channels}
+
+    try :
+        r = requests.post(url, headers=headers, files=upload_file, data = data)
+        json_data = json.loads(r.text)
+        if (json_data['ok']):
+            print "[+] File successfully uploaded to channel " + channels
+        else :
+            print "[-] unable to upload. ", json_data
+    except Exception as e:
+        print "[-] Something is wrong. Unable to send at the moment."
+        print "[-] Exception : ", e
+
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description= "Send Message or File to Slack")
+    parser.add_argument("-m", help="Message to be sent")
+    parser.add_argument("-f", help="File to be sent")
+    parser.add_argument("-u", help="Username of message sender", default="bot")
+    parser.add_argument("-c", help="Channel to Post to. Default = bot", default="test")
+    args = parser.parse_args()
+    if not (args.m or args.f):
+        parser.error("Neither Message nor File specified.")
+
+    if args.m and (not args.f):
+        send_message(args)
+    elif args.f:
+        send_file(args)
+    else :
+        print "usage send-to-slack.py [-m Message] [-h Help] [-f File] [-u As user] [-c To # Channel]"
+    
+
